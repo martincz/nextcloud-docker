@@ -11,6 +11,8 @@ RUN set -ex; \
         busybox-static \
         libldap-common \
         ssl-cert \
+        certbot \
+        python3-certbot-apache \
     ; \
     rm -rf /var/lib/apt/lists/*; \
     \
