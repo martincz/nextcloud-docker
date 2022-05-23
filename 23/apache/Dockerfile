@@ -10,6 +10,7 @@ RUN set -ex; \
         bzip2 \
         busybox-static \
         libldap-common \
+        ssl-cert \
     ; \
     rm -rf /var/lib/apt/lists/*; \
     \
@@ -120,7 +121,9 @@ RUN a2enmod headers rewrite remoteip ;\
      echo RemoteIPTrustedProxy 172.16.0.0/12 ;\
      echo RemoteIPTrustedProxy 192.168.0.0/16 ;\
     } > /etc/apache2/conf-available/remoteip.conf;\
-    a2enconf remoteip
+    a2enconf remoteip;\
+    a2enmod ssl;\
+    a2ensite default-ssl
 
 ENV NEXTCLOUD_VERSION 23.0.5
 
