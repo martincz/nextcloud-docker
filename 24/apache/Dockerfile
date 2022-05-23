@@ -11,6 +11,7 @@ RUN set -ex; \
         busybox-static \
         libldap-common \
         vim \
+        sudo \
         ssl-cert \
         certbot \
         python3-certbot-apache \
