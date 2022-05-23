@@ -10,6 +10,7 @@ RUN set -ex; \
         bzip2 \
         busybox-static \
         libldap-common \
+        vim \
         ssl-cert \
         certbot \
         python3-certbot-apache \
