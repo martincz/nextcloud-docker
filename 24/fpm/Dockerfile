@@ -12,6 +12,7 @@ RUN set -ex; \
         libldap-common \
         vim \
         sudo \
+        supervisor \
         ssl-cert \
         certbot \
         python3-certbot-apache \
@@ -19,6 +20,7 @@ RUN set -ex; \
     rm -rf /var/lib/apt/lists/*; \
     \
     mkdir -p /var/spool/cron/crontabs; \
+    mkdir /var/log/supervisord /var/run/supervisord; \
     echo '*/5 * * * * php -f /var/www/html/cron.php' > /var/spool/cron/crontabs/www-data
 
 # install the PHP extensions we need
@@ -150,6 +152,10 @@ RUN set -ex; \
 
 COPY *.sh upgrade.exclude /
 COPY config/* /usr/src/nextcloud/config/
+COPY supervisord.conf /
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["php-fpm"]
+
+ENV NEXTCLOUD_UPDATE=1
+
+CMD ["/usr/bin/supervisord", "-c", "/supervisord.conf"]

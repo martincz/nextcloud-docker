@@ -125,6 +125,9 @@ function create_variant() {
 	# Copy the config directory
 	cp -rT .config "$dir/config"
 
+	# Copy the supervisord config
+	cp supervisord.conf "$dir/"
+
 	# Remove Apache config if we're not an Apache variant.
 	if [ "$variant" != "apache" ]; then
 		rm "$dir/config/apache-pretty-urls.config.php"
