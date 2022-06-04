@@ -18,7 +18,7 @@ declare -A base=(
 )
 
 declare -A extras=(
-	[apache]='\nRUN a2enmod headers rewrite remoteip ;\\\n    {\\\n     echo RemoteIPHeader X-Real-IP ;\\\n     echo RemoteIPTrustedProxy 10.0.0.0/8 ;\\\n     echo RemoteIPTrustedProxy 172.16.0.0/12 ;\\\n     echo RemoteIPTrustedProxy 192.168.0.0/16 ;\\\n    } > /etc/apache2/conf-available/remoteip.conf;\\\n    a2enconf remoteip;\\\n    a2enmod ssl;\\\n    a2ensite default-ssl'
+	[apache]='\nRUN a2enmod headers rewrite remoteip ;\\\n    {\\\n     echo RemoteIPHeader X-Real-IP ;\\\n     echo RemoteIPTrustedProxy 10.0.0.0/8 ;\\\n     echo RemoteIPTrustedProxy 172.16.0.0/12 ;\\\n     echo RemoteIPTrustedProxy 192.168.0.0/16 ;\\\n    } > /etc/apache2/conf-available/remoteip.conf;\\\n    a2enconf remoteip'
 	[fpm]=''
 	[fpm-alpine]=''
 )
@@ -124,9 +124,6 @@ function create_variant() {
 
 	# Copy the config directory
 	cp -rT .config "$dir/config"
-
-	# Copy the supervisord config
-	cp supervisord.conf "$dir/"
 
 	# Remove Apache config if we're not an Apache variant.
 	if [ "$variant" != "apache" ]; then

@@ -10,17 +10,10 @@ RUN set -ex; \
         bzip2 \
         busybox-static \
         libldap-common \
-        vim \
-        sudo \
-        supervisor \
-        ssl-cert \
-        certbot \
-        python3-certbot-apache \
     ; \
     rm -rf /var/lib/apt/lists/*; \
     \
     mkdir -p /var/spool/cron/crontabs; \
-    mkdir /var/log/supervisord /var/run/supervisord; \
     echo '*/5 * * * * php -f /var/www/html/cron.php' > /var/spool/cron/crontabs/www-data
 
 # install the PHP extensions we need
@@ -127,9 +120,7 @@ RUN a2enmod headers rewrite remoteip ;\
      echo RemoteIPTrustedProxy 172.16.0.0/12 ;\
      echo RemoteIPTrustedProxy 192.168.0.0/16 ;\
     } > /etc/apache2/conf-available/remoteip.conf;\
-    a2enconf remoteip;\
-    a2enmod ssl;\
-    a2ensite default-ssl
+    a2enconf remoteip
 
 ENV NEXTCLOUD_VERSION 23.0.5
 
@@ -162,10 +153,6 @@ RUN set -ex; \
 
 COPY *.sh upgrade.exclude /
 COPY config/* /usr/src/nextcloud/config/
-COPY supervisord.conf /
 
 ENTRYPOINT ["/entrypoint.sh"]
-
-ENV NEXTCLOUD_UPDATE=1
-
-CMD ["/usr/bin/supervisord", "-c", "/supervisord.conf"]
+CMD ["apache2-foreground"]
