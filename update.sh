@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+declare -A alpine_version=(
+	[24]='3.16'
+	[25]='3.16'
+	[default]='3.17'
+)
+
 declare -A php_version=(
-	[23]='8.0'
 	[24]='8.0'
 	[default]='8.1'
 )
@@ -78,7 +83,7 @@ variants=(
 	fpm-alpine
 )
 
-min_version='23'
+min_version='24'
 
 # version_greater_or_equal A B returns whether A >= B
 function version_greater_or_equal() {
@@ -87,6 +92,7 @@ function version_greater_or_equal() {
 
 function create_variant() {
 	dir="$1/$variant"
+	alpineVersion=${alpine_version[$version]-${alpine_version[default]}}
 	phpVersion=${php_version[$version]-${php_version[default]}}
 	crontabInt=${crontab_int[$version]-${crontab_int[default]}}
 
@@ -101,6 +107,7 @@ function create_variant() {
 
 	# Replace the variables.
 	sed -ri -e '
+		s/%%ALPINE_VERSION%%/'"$alpineVersion"'/g;
 		s/%%PHP_VERSION%%/'"$phpVersion"'/g;
 		s/%%VARIANT%%/'"$variant"'/g;
 		s/%%VERSION%%/'"$fullversion"'/g;
@@ -112,9 +119,16 @@ function create_variant() {
 		s/%%REDIS_VERSION%%/'"${pecl_versions[redis]}"'/g;
 		s/%%IMAGICK_VERSION%%/'"${pecl_versions[imagick]}"'/g;
 		s/%%CRONTAB_INT%%/'"$crontabInt"'/g;
-		\@docker-php-ext-configure gmp --with-gmp@d;
-		\@/usr/include/gmp.h@d;
 	' "$dir/Dockerfile"
+
+	# Nextcloud 26+ recommends sysvsem
+	case "$version" in
+		24|25 )
+			sed -ri -e '
+				/sysvsem/d
+			' "$dir/Dockerfile"
+			;;
+	esac
 
 	# Copy the shell scripts
 	for name in entrypoint cron; do

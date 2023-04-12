@@ -5,8 +5,8 @@ FROM php:8.1-fpm-alpine3.16
 RUN set -ex; \
     \
     apk add --no-cache \
-        rsync \
         imagemagick \
+        rsync \
     ; \
     \
     rm /var/spool/cron/crontabs/root; \
@@ -20,20 +20,20 @@ RUN set -ex; \
         $PHPIZE_DEPS \
         autoconf \
         freetype-dev \
+        gmp-dev \
         icu-dev \
+        imagemagick-dev \
         libevent-dev \
         libjpeg-turbo-dev \
         libmcrypt-dev \
-        libpng-dev \
         libmemcached-dev \
+        libpng-dev \
+        libwebp-dev \
         libxml2-dev \
         libzip-dev \
         openldap-dev \
         pcre-dev \
         postgresql-dev \
-        imagemagick-dev \
-        libwebp-dev \
-        gmp-dev \
     ; \
     \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
@@ -42,6 +42,7 @@ RUN set -ex; \
         bcmath \
         exif \
         gd \
+        gmp \
         intl \
         ldap \
         opcache \
@@ -49,20 +50,19 @@ RUN set -ex; \
         pdo_mysql \
         pdo_pgsql \
         zip \
-        gmp \
     ; \
     \
 # pecl will claim success even if one install fails, so we need to perform each install separately
     pecl install APCu-5.1.22; \
+    pecl install imagick-3.7.0; \
     pecl install memcached-3.2.0; \
     pecl install redis-5.3.7; \
-    pecl install imagick-3.7.0; \
     \
     docker-php-ext-enable \
         apcu \
+        imagick \
         memcached \
         redis \
-        imagick \
     ; \
     rm -r /tmp/pear; \
     \
@@ -81,11 +81,13 @@ ENV PHP_MEMORY_LIMIT 512M
 ENV PHP_UPLOAD_LIMIT 512M
 RUN { \
         echo 'opcache.enable=1'; \
-        echo 'opcache.interned_strings_buffer=16'; \
+        echo 'opcache.interned_strings_buffer=32'; \
         echo 'opcache.max_accelerated_files=10000'; \
         echo 'opcache.memory_consumption=128'; \
         echo 'opcache.save_comments=1'; \
         echo 'opcache.revalidate_freq=60'; \
+        echo 'opcache.jit=1255'; \
+        echo 'opcache.jit_buffer_size=128M'; \
     } > "${PHP_INI_DIR}/conf.d/opcache-recommended.ini"; \
     \
     echo 'apc.enable_cli=1' >> "${PHP_INI_DIR}/conf.d/docker-php-ext-apcu.ini"; \
@@ -103,7 +105,7 @@ RUN { \
 VOLUME /var/www/html
 
 
-ENV NEXTCLOUD_VERSION 25.0.3
+ENV NEXTCLOUD_VERSION 25.0.5
 
 RUN set -ex; \
     apk add --no-cache --virtual .fetch-deps \

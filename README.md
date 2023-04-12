@@ -16,6 +16,8 @@ A safe home for all your data. Access & share your files, calendars, contacts, m
 
 ![logo](https://cdn.rawgit.com/nextcloud/docker/80dd587d847b184ba95d7187a2a7a56ae4cbbb7b/logo.svg)
 
+This Docker micro-service image is developed and maintained by the Nextcloud community. Nextcloud GmbH does not offer support for this Docker image. When you are looking to get professional support, you can become an [enterprise](https://nextcloud.com/enterprise/) customer or use [AIO](https://github.com/nextcloud/all-in-one#nextcloud-all-in-one).
+
 # How to use this image
 This image is designed to be used in a micro-service environment. There are two versions of the image you can choose from.
 
@@ -66,7 +68,7 @@ Database:
 ```console
 $ docker run -d \
 -v db:/var/lib/mysql \
-mariadb:10.5
+mariadb:10.6
 ```
 
 If you want to get fine grained access to your individual files, you can mount additional volumes for data, config, your theme and custom apps. The `data`, `config` files are stored in respective subfolders inside `/var/www/html/`. The apps are split into core `apps` (which are shipped with Nextcloud and you don't need to take care of) and a `custom_apps` folder. If you use a custom theme it would go into the `themes` subfolder.
@@ -89,6 +91,10 @@ $ docker run -d \
 -v theme:/var/www/html/themes/<YOUR_CUSTOM_THEME> \
 nextcloud
 ```
+If mounting additional volumes, you should note that data inside the main folder (`/var/www/html`) may be removed during installation and upgrades, unless listed in [upgrade.exclude](https://github.com/nextcloud/docker/blob/master/upgrade.exclude). You should consider:
+- Confirming that [upgrade.exclude](https://github.com/nextcloud/docker/blob/master/upgrade.exclude) contains the files and folders that should persist during installation and upgrades; or 
+- Mounting storage volumes to locations outside of `/var/www/html`.
+
 
 ## Using the Nextcloud command-line interface
 To use the [Nextcloud command-line interface](https://docs.nextcloud.com/server/latest/admin_manual/configuration_server/occ_command.html) (aka. `occ` command):
@@ -118,7 +124,7 @@ __PostgreSQL__:
 - `POSTGRES_PASSWORD` Password for the database user using postgres.
 - `POSTGRES_HOST` Hostname of the database server using postgres.
 
-As an alternative to passing sensitive information via environment variables, `_FILE` may be appended to the previously listed environment variables, causing the initialization script to load the values for those variables from files present in the container. See [Docker secrets](#docker=secrets) section below.
+As an alternative to passing sensitive information via environment variables, `_FILE` may be appended to the previously listed environment variables, causing the initialization script to load the values for those variables from files present in the container. See [Docker secrets](#docker-secrets) section below.
 
 If you set any group of values (i.e. all of `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_HOST`), they will not be asked in the install page on first run. With a complete configuration by using all variables for your database type, you can additionally configure your Nextcloud instance by setting admin user and password (only works if you set both):
 
@@ -137,11 +143,7 @@ The install and update script is only triggered when a default command is used (
 
 - `NEXTCLOUD_UPDATE` (default: `0`)
 
-If you share your html folder with multiple docker containers, you might want to avoid multiple processes updating the same shared volume
-
-- `NEXTCLOUD_INIT_LOCK` (not set by default) Set it to true to enable initialization locking. Other containers will wait for the current process to finish updating the html volume to continue.
-
-You might also want to make sure the htaccess is up to date after each container update. Especially on multiple swarm nodes as any discrepancy will make your server unusable.
+You might want to make sure the htaccess is up to date after each container update. Especially on multiple swarm nodes as any discrepancy will make your server unusable.
 
 - `NEXTCLOUD_INIT_HTACCESS` (not set by default) Set it to true to enable run `occ maintenance:update:htaccess` after container initialization.
 
@@ -161,7 +163,7 @@ To use an external SMTP server, you have to provide the connection details. To c
 - `SMTP_AUTHTYPE` (default: `LOGIN`): The method used for authentication. Use `PLAIN` if no authentication is required.
 - `SMTP_NAME` (empty by default): The username for the authentication.
 - `SMTP_PASSWORD` (empty by default): The password for the authentication.
-- `MAIL_FROM_ADDRESS` (not set by default): Use this address for the 'from' field in the emails sent by Nextcloud.
+- `MAIL_FROM_ADDRESS` (not set by default): Set the local-part for the 'from' field in the emails sent by Nextcloud.
 - `MAIL_DOMAIN` (not set by default): Set a different domain for the emails than the domain where Nextcloud is installed.
 
 Check the [Nextcloud documentation](https://docs.nextcloud.com/server/latest/admin_manual/configuration_server/email_configuration.html) for other values to configure SMTP.
@@ -239,9 +241,9 @@ volumes:
 
 services:
   db:
-    image: mariadb:10.5
+    image: mariadb:10.6
     restart: always
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
     volumes:
       - db:/var/lib/mysql
     environment:
@@ -285,9 +287,9 @@ volumes:
 
 services:
   db:
-    image: mariadb:10.5
+    image: mariadb:10.6
     restart: always
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
     volumes:
       - db:/var/lib/mysql
     environment:
@@ -384,7 +386,7 @@ secrets:
     file: ./postgres_user.txt # put postgresql username in this file
 ```
 
-Currently, this is only supported for `NEXTCLOUD_ADMIN_PASSWORD`, `NEXTCLOUD_ADMIN_USER`, `MYSQL_DATABASE`, `MYSQL_PASSWORD`, `MYSQL_USER`, `POSTGRES_DB`, `POSTGRES_PASSWORD`, `POSTGRES_USER`, `REDIS_HOST_PASSWORD` and `SMTP_PASSWORD`.
+Currently, this is only supported for `NEXTCLOUD_ADMIN_PASSWORD`, `NEXTCLOUD_ADMIN_USER`, `MYSQL_DATABASE`, `MYSQL_PASSWORD`, `MYSQL_USER`, `POSTGRES_DB`, `POSTGRES_PASSWORD`, `POSTGRES_USER`, `REDIS_HOST_PASSWORD`, `SMTP_PASSWORD`, `OBJECTSTORE_S3_KEY`, and `OBJECTSTORE_S3_SECRET`.
 
 If you set any group of values (i.e. all of `MYSQL_DATABASE_FILE`, `MYSQL_USER_FILE`, `MYSQL_PASSWORD_FILE`, `MYSQL_HOST`), the script will not use the corresponding group of environment variables (`MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_HOST`).
 
