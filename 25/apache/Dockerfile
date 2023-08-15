@@ -79,9 +79,9 @@ RUN set -ex; \
     apt-mark auto '.*' > /dev/null; \
     apt-mark manual $savedAptMark; \
     ldd "$(php -r 'echo ini_get("extension_dir");')"/*.so \
-        | awk '/=>/ { print $3 }' \
+        | awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); print so }' \
         | sort -u \
-        | xargs -r dpkg-query -S \
+        | xargs -r dpkg-query --search \
         | cut -d: -f1 \
         | sort -u \
         | xargs -rt apt-mark manual; \
@@ -130,7 +130,7 @@ RUN a2enmod headers rewrite remoteip ;\
     } > /etc/apache2/conf-available/remoteip.conf;\
     a2enconf remoteip
 
-ENV NEXTCLOUD_VERSION 25.0.8
+ENV NEXTCLOUD_VERSION 25.0.10
 
 RUN set -ex; \
     fetchDeps=" \
@@ -140,8 +140,8 @@ RUN set -ex; \
     apt-get update; \
     apt-get install -y --no-install-recommends $fetchDeps; \
     \
-    curl -fsSL -o nextcloud.tar.bz2 "https://download.nextcloud.com/server/releases/nextcloud-25.0.8.tar.bz2"; \
-    curl -fsSL -o nextcloud.tar.bz2.asc "https://download.nextcloud.com/server/releases/nextcloud-25.0.8.tar.bz2.asc"; \
+    curl -fsSL -o nextcloud.tar.bz2 "https://download.nextcloud.com/server/releases/nextcloud-25.0.10.tar.bz2"; \
+    curl -fsSL -o nextcloud.tar.bz2.asc "https://download.nextcloud.com/server/releases/nextcloud-25.0.10.tar.bz2.asc"; \
     export GNUPGHOME="$(mktemp -d)"; \
 # gpg key from https://nextcloud.com/nextcloud.asc
     gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 28806A878AE423A28372792ED75899B9A724937A; \
