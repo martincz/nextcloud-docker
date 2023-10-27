@@ -66,7 +66,7 @@ RUN set -ex; \
     pecl install APCu-5.1.22; \
     pecl install imagick-3.7.0; \
     pecl install memcached-3.2.0; \
-    pecl install redis-5.3.7; \
+    pecl install redis-6.0.2; \
     \
     docker-php-ext-enable \
         apcu \
@@ -122,16 +122,23 @@ RUN { \
 
 VOLUME /var/www/html
 
-RUN a2enmod headers rewrite remoteip ;\
-    {\
-     echo RemoteIPHeader X-Real-IP ;\
-     echo RemoteIPTrustedProxy 10.0.0.0/8 ;\
-     echo RemoteIPTrustedProxy 172.16.0.0/12 ;\
-     echo RemoteIPTrustedProxy 192.168.0.0/16 ;\
-    } > /etc/apache2/conf-available/remoteip.conf;\
+RUN a2enmod headers rewrite remoteip ; \
+    { \
+     echo 'RemoteIPHeader X-Real-IP'; \
+     echo 'RemoteIPInternalProxy 10.0.0.0/8'; \
+     echo 'RemoteIPInternalProxy 172.16.0.0/12'; \
+     echo 'RemoteIPInternalProxy 192.168.0.0/16'; \
+    } > /etc/apache2/conf-available/remoteip.conf; \
     a2enconf remoteip
 
-ENV NEXTCLOUD_VERSION 26.0.5
+# set apache config LimitRequestBody
+ENV APACHE_BODY_LIMIT 1073741824
+RUN { \
+     echo 'LimitRequestBody ${APACHE_BODY_LIMIT}'; \
+    } > /etc/apache2/conf-available/apache-limits.conf; \
+    a2enconf apache-limits
+
+ENV NEXTCLOUD_VERSION 26.0.8
 
 RUN set -ex; \
     fetchDeps=" \
@@ -141,8 +148,8 @@ RUN set -ex; \
     apt-get update; \
     apt-get install -y --no-install-recommends $fetchDeps; \
     \
-    curl -fsSL -o nextcloud.tar.bz2 "https://download.nextcloud.com/server/releases/nextcloud-26.0.5.tar.bz2"; \
-    curl -fsSL -o nextcloud.tar.bz2.asc "https://download.nextcloud.com/server/releases/nextcloud-26.0.5.tar.bz2.asc"; \
+    curl -fsSL -o nextcloud.tar.bz2 "https://download.nextcloud.com/server/releases/nextcloud-26.0.8.tar.bz2"; \
+    curl -fsSL -o nextcloud.tar.bz2.asc "https://download.nextcloud.com/server/releases/nextcloud-26.0.8.tar.bz2.asc"; \
     export GNUPGHOME="$(mktemp -d)"; \
 # gpg key from https://nextcloud.com/nextcloud.asc
     gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 28806A878AE423A28372792ED75899B9A724937A; \
