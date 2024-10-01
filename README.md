@@ -163,7 +163,7 @@ If you want to use Redis you have to create a separate [Redis](https://hub.docke
 
 The use of Redis is recommended to prevent file locking problems. See the examples for further instructions.
 
-To use an external SMTP server, you have to provide the connection details. To configure Nextcloud to use SMTP add:
+To use an external SMTP server, you have to provide the connection details. Note that if you configure these values via Docker, you should **not** use the Nexcloud Web UI to configure external SMTP server parameters. Conversely, if you prefer to use the Web UI, do **not** set these variables here (because these variables will override whatever you attempt to set in the Web UI for these parameters). To configure Nextcloud to use SMTP add:
 
 - `SMTP_HOST` (not set by default): The hostname of the SMTP server.
 - `SMTP_SECURE` (empty by default): Set to `ssl` to use SSL, or `tls` to use STARTTLS.
@@ -217,6 +217,18 @@ To customize Apache max file upload limit you can change the following variable:
 - `APACHE_BODY_LIMIT` (default `1073741824` [1GiB]) This restricts the total
 size of the HTTP request body sent from the client. It specifies the number of _bytes_ that are allowed in a request body. A value of **0** means **unlimited**. Check the [Nextcloud documentation](https://docs.nextcloud.com/server/latest/admin_manual/configuration_files/big_file_upload_configuration.html#apache) for more information.
 
+### Auto configuration and Nextcloud updates
+The image comes with special config files for Nextcloud that set parameters specific to containerized usage (e.g. `upgrade-disable-web.config.php`) or enable auto configuration via environment variables (e.g. `reverse-proxy.config.php`). Within the image, the latest version of these config files are located in `/usr/src/nextcloud/config`.
+
+During a fresh Nextcloud installation, the latest version (from the image) of these files are copied into `/var/www/html/config` so that they are stored within your container's persistent volume and picked up by Nextcloud alongside your local configuration.
+
+The copied files, however, are **not** automatically overwritten whenever you update your environment with a newer Nextcloud image. This is to prevent local changes in `/var/www/html/config` from being unexpectedly overwritten. This may lead to your image-specific configuration files becoming outdated and image functionality not matching that which is documented.
+
+A warning will be generated in the container log output when outdated image-specific configuration files are detected at startup in a running container. When you see this warning, you should manually compare (or copy) the files from `/usr/src/nextcloud/config` to `/var/www/html/config`.
+
+As long as you have not modified any of the provided config files in `/var/www/html/config` (other than `config.php`) or only added new ones with names that do not conflict with the image specific ones, copying the new ones into place should be safe (but check the source path `/usr/src/nextcloud/config` for any newly named config files to avoid new overlaps just in case).
+
+Not keeping these files up-to-date when this warning appears may cause certain auto configuration environment variables to be ignored or the image to not work as documented or expected.
 
 ## Auto configuration via hook folders
 
@@ -320,7 +332,7 @@ services:
 Then run `docker-compose up -d`, now you can access Nextcloud at http://localhost:8080/ from your host system.
 
 ## Base version - FPM
-When using the FPM image, you need another container that acts as web server on port 80 and proxies the requests to the Nextcloud container. In this example a simple nginx container is combined with the Nextcloud-fpm image and a MariaDB database container. The data is stored in docker volumes. The nginx container also needs access to static files from your Nextcloud installation. It gets access to all the volumes mounted to Nextcloud via the `volumes_from` option.The configuration for nginx is stored in the configuration file `nginx.conf`, that is mounted into the container. An example can be found in the examples section [here](https://github.com/nextcloud/docker/tree/master/.examples).
+When using the FPM image, you need another container that acts as web server on port 80 and proxies the requests to the Nextcloud container. In this example a simple nginx container is combined with the Nextcloud-fpm image and a MariaDB database container. The data is stored in docker volumes. The nginx container also needs access to static files from your Nextcloud installation. It gets access to all the volumes mounted to Nextcloud via the `volumes_from` option. The configuration for nginx is stored in the configuration file `nginx.conf`, that is mounted into the container. An example can be found in the examples section [here](https://github.com/nextcloud/docker/tree/master/.examples).
 
 As this setup does **not include encryption**, it should be run behind a proxy.
 
@@ -602,5 +614,12 @@ You're already using Nextcloud and want to switch to docker? Great! Here are som
     docker-compose exec app chown -R www-data:www-data /var/www/html/custom_apps
     ```
 
-# Questions / Issues
-If you got any questions or problems using the image, please visit our [Github Repository](https://github.com/nextcloud/docker) and write an issue.
+# Help (Questions / Issues)
+
+**If you have any questions or problems while using the image, please ask for assistance on the Help Forum first (https://help.nextcloud.com)**.
+
+Also, most Nextcloud Server matters are covered in the [Nextcloud Admin Manual](https://docs.nextcloud.com/server/latest/admin_manual/) which is routinely updated.
+
+If you believe you've found a bug (or have an enhancement idea) in the image itself, please [search for already reported bugs and enhancement ideas](https://github.com/nextcloud/docker/issues). If there is an existing open issue, you can either add to the discussion there or upvote to indicate you're impacted by (or interested in) the same issue. If you believe you've found a new bug, please create a new Issue so that others can try to reproduce it and remediation can be tracked.
+
+Thanks for helping to make the Nextcloud community maintained micro-services image better!
