@@ -1,5 +1,5 @@
 # DO NOT EDIT: created by update.sh from Dockerfile-alpine.template
-FROM php:8.2-fpm-alpine3.20
+FROM php:8.3-fpm-alpine3.22
 
 # entrypoint.sh and cron.sh dependencies
 RUN set -ex; \
@@ -32,7 +32,6 @@ RUN set -ex; \
         imagemagick-dev \
         libevent-dev \
         libjpeg-turbo-dev \
-        libmcrypt-dev \
         libmemcached-dev \
         libpng-dev \
         libwebp-dev \
@@ -54,7 +53,6 @@ RUN set -ex; \
         gmp \
         intl \
         ldap \
-        opcache \
         pcntl \
         pdo_mysql \
         pdo_pgsql \
@@ -63,13 +61,17 @@ RUN set -ex; \
     ; \
     \
 # pecl will claim success even if one install fails, so we need to perform each install separately
-    pecl install APCu-5.1.23; \
-    pecl install imagick-3.7.0; \
-    pecl install memcached-3.2.0; \
-    pecl install redis-6.0.2; \
+    pecl install APCu-5.1.27; \
+    pecl install igbinary-3.2.16; \
+    pecl install imagick-3.8.0; \
+    pecl install memcached-3.4.0 \
+        --configureoptions 'enable-memcached-igbinary="yes"'; \
+    pecl install redis-6.2.0 \
+        --configureoptions 'enable-redis-igbinary="yes" enable-redis-zstd="yes" enable-redis-lz4="yes"'; \
     \
     docker-php-ext-enable \
         apcu \
+        igbinary \
         imagick \
         memcached \
         redis \
@@ -89,18 +91,24 @@ RUN set -ex; \
 # see https://docs.nextcloud.com/server/latest/admin_manual/installation/server_tuning.html#enable-php-opcache
 ENV PHP_MEMORY_LIMIT 512M
 ENV PHP_UPLOAD_LIMIT 512M
+ENV PHP_OPCACHE_MEMORY_CONSUMPTION 128
 RUN { \
         echo 'opcache.enable=1'; \
         echo 'opcache.interned_strings_buffer=32'; \
         echo 'opcache.max_accelerated_files=10000'; \
-        echo 'opcache.memory_consumption=128'; \
+        echo 'opcache.memory_consumption=${PHP_OPCACHE_MEMORY_CONSUMPTION}'; \
         echo 'opcache.save_comments=1'; \
         echo 'opcache.revalidate_freq=60'; \
         echo 'opcache.jit=1255'; \
-        echo 'opcache.jit_buffer_size=128M'; \
+        echo 'opcache.jit_buffer_size=8M'; \
     } > "${PHP_INI_DIR}/conf.d/opcache-recommended.ini"; \
     \
     echo 'apc.enable_cli=1' >> "${PHP_INI_DIR}/conf.d/docker-php-ext-apcu.ini"; \
+    \
+    { \
+        echo 'apc.serializer=igbinary'; \
+        echo 'session.serialize_handler=igbinary'; \
+    } >> "${PHP_INI_DIR}/conf.d/docker-php-ext-igbinary.ini"; \
     \
     { \
         echo 'memory_limit=${PHP_MEMORY_LIMIT}'; \
@@ -120,7 +128,7 @@ RUN { \
 VOLUME /var/www/html
 
 
-ENV NEXTCLOUD_VERSION 30.0.0
+ENV NEXTCLOUD_VERSION 30.0.17
 
 RUN set -ex; \
     apk add --no-cache --virtual .fetch-deps \
@@ -128,8 +136,8 @@ RUN set -ex; \
         gnupg \
     ; \
     \
-    curl -fsSL -o nextcloud.tar.bz2 "https://download.nextcloud.com/server/releases/nextcloud-30.0.0.tar.bz2"; \
-    curl -fsSL -o nextcloud.tar.bz2.asc "https://download.nextcloud.com/server/releases/nextcloud-30.0.0.tar.bz2.asc"; \
+    curl -fsSL -o nextcloud.tar.bz2 "https://download.nextcloud.com/server/releases/nextcloud-30.0.17.tar.bz2"; \
+    curl -fsSL -o nextcloud.tar.bz2.asc "https://download.nextcloud.com/server/releases/nextcloud-30.0.17.tar.bz2.asc"; \
     export GNUPGHOME="$(mktemp -d)"; \
 # gpg key from https://nextcloud.com/nextcloud.asc
     gpg --batch --keyserver keyserver.ubuntu.com  --recv-keys 28806A878AE423A28372792ED75899B9A724937A; \
