@@ -2,7 +2,7 @@
 set -eo pipefail
 
 declare -A alpine_version=(
-	[default]='3.23'
+	[default]='3.24'
 )
 
 declare -A debian_version=(
@@ -10,7 +10,13 @@ declare -A debian_version=(
 )
 
 declare -A php_version=(
-	[default]='8.3'
+	[32]='8.3'
+	[default]='8.4'
+)
+
+declare -A ftp_options=(
+	[32]='--with-openssl-dir=/usr'
+	[default]='--with-ftp-ssl'
 )
 
 declare -A cmd=(
@@ -94,7 +100,7 @@ variants=(
 	fpm-alpine
 )
 
-min_version='31'
+min_version='32'
 
 # version_greater_or_equal A B returns whether A >= B
 function version_greater_or_equal() {
@@ -105,6 +111,7 @@ function create_variant() {
 	dir="$1/$variant"
 	alpineVersion=${alpine_version[$version]-${alpine_version[default]}}
 	debianVersion=${debian_version[$version]-${debian_version[default]}}
+	ftp_options=${ftp_options[$version]-${ftp_options[default]}}
 	phpVersion=${php_version[$version]-${php_version[default]}}
 	crontabInt=${crontab_int[$version]-${crontab_int[default]}}
 	url="https://github.com/nextcloud-releases/server/releases/download/v$fullversion/nextcloud-$fullversion.tar.bz2"
@@ -131,6 +138,7 @@ function create_variant() {
 		s/%%CMD%%/'"${cmd[$variant]}"'/g;
 		s|%%VARIANT_EXTRAS%%|'"${extras[$variant]}"'|g;
 		s/%%APCU_VERSION%%/'"${pecl_versions[APCu]}"'/g;
+		s|%%FTP_OPTIONS%%|'"$ftp_options"'|g;
 		s/%%IGBINARY_VERSION%%/'"${pecl_versions[igbinary]}"'/g;
 		s/%%IMAGICK_VERSION%%/'"${pecl_versions[imagick]}"'/g;
 		s/%%MEMCACHED_VERSION%%/'"${pecl_versions[memcached]}"'/g;
